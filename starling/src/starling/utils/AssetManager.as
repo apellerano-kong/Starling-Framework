@@ -38,7 +38,7 @@ package starling.utils
     public class AssetManager
     {
         private const SUPPORTED_EXTENSIONS:Vector.<String> = 
-            new <String>["png", "jpg", "jpeg", "atf", "mp3", "xml", "fnt"]; 
+            new <String>["png", "jpg", "jpeg", "atf", "mp3", "xml", "fnt", "pex"]; 
         
         private var mScaleFactor:Number;
         private var mUseMipMaps:Boolean;
@@ -49,6 +49,7 @@ package starling.utils
         private var mTextures:Dictionary;
         private var mAtlases:Dictionary;
         private var mSounds:Dictionary;
+		private var mParticleConfigs:Dictionary;
         
         /** helper objects */
         private var sNames:Vector.<String> = new <String>[];
@@ -65,6 +66,7 @@ package starling.utils
             mTextures = new Dictionary();
             mAtlases = new Dictionary();
             mSounds = new Dictionary();
+			mParticleConfigs = new Dictionary();
         }
         
         /** Disposes all contained textures. */
@@ -194,6 +196,17 @@ package starling.utils
             else
                 mSounds[name] = sound;
         }
+		
+		/** Register a Particle config under a certain name. It will be available right away. */
+		public function addParticleConfig(name:String, config:XML):void
+		{
+			log("Adding particle config '" + name + "'");
+			
+			if (name in mParticleConfigs)
+				throw new Error("Duplicate particle config name: " + name);
+			else
+				mParticleConfigs[name] = config;
+		}
         
         // removing
         
@@ -220,6 +233,12 @@ package starling.utils
         {
             delete mSounds[name];
         }
+		
+		/** Removes a certain particle config. */
+		public function removeParticleConfig(name:String):void
+		{
+			delete mParticleConfigs[name];
+		}
         
         /** Removes assets of all types and empties the queue. */
         public function purge():void
@@ -234,6 +253,7 @@ package starling.utils
             mTextures = new Dictionary();
             mAtlases = new Dictionary();
             mSounds = new Dictionary();
+			mParticleConfigs = new Dictionary();
         }
         
         // queued adding
@@ -393,6 +413,11 @@ package starling.utils
                         TextField.registerBitmapFont(new BitmapFont(fontTexture, xml));
                         removeTexture(name, false);
                     }
+					else if (rootNode == "particleEmitterConfig")
+					{
+						name = getName(xml.texture.@name.toString());
+						addParticleConfig(name, xml);
+					}
                     else
                         throw new Error("XML contents not recognized: " + rootNode);
                 }
@@ -485,6 +510,7 @@ package starling.utils
                         addTexture(name, Texture.fromAtfData(bytes, mScaleFactor, mUseMipMaps, onComplete));
                         break;
                     case "fnt":
+					case "pex":
                     case "xml":
                         xmls.push(new XML(bytes));
                         onComplete();
